@@ -9,7 +9,8 @@ int nBase;
 volatile int frecIndex = 0;
 bool pulsePinState;
 bool dirState;
-int nSubida = 4;
+int nSubida = 5;
+// nSubida estaba en 4
 int nBajada = 3;
 
 int peepIndex = 0;
@@ -209,7 +210,7 @@ float setPeepPressure;
 float pTrigger;
 
 //float compliance;
-float volumen;
+float volumen = 0;
 float flujo;
 
 // Process Variables
@@ -512,8 +513,8 @@ void updateEncoder()
     if (encoderValue[3] > 4)
       encoderValue[3] = 4;
 
-    if (encoderValue[4] < 80)
-      encoderValue[4] = 80;
+    if (encoderValue[4] < 40)
+      encoderValue[4] = 40;
 
     if (encoderValue[4] > 200)
       encoderValue[4] = 200;
@@ -884,7 +885,7 @@ void resetAlarmas()
 float readFlow()
 {
   adc2 = ads.readADC_SingleEnded(1);
-  return ((adc2 - offsetFlujo) * 0.324);
+  return ((adc2 - offsetFlujo) * 0.3458);
   //return (48.64 * (71.38 * (adc2 - offsetFlujo) / offsetFlujo) * 1.1128); // No scorrection
 }
 
@@ -903,7 +904,7 @@ void updatePressure()
   if (pressureRead > maxPressure)
     maxPressure = pressureRead;
 
-  if ((pressureRead < peepPressure) && pressureRead > -70.0 && ((millis() - contadorCiclo) < 600) && FSM == 2)
+  if ((pressureRead < peepPressure) && pressureRead > -70.0 && ((millis() - contadorCiclo) < 500) && FSM == 2)
   {
     peepPressure = pressureRead;
     peepIndex = 0;
@@ -1203,9 +1204,9 @@ void loop()
     //    Serial.print(motorPulses);
 
     //    Serial.print("\t");
-    // Serial.print((millis() - contadorCiclo));
+    // Serial.print(volumen * bpm);
     // Serial.print("\t");
-    // Serial.print(FSM);
+    // Serial.print(volumen);
     // Serial.print("\t");
     Serial.println(pressureRead);
 
@@ -1479,18 +1480,21 @@ void loop()
 
   // Start Cycle
   updatePressure();
-  flujo = readFlow();
-  dtFlujo = millis() - tFlujo;
-  volumen += flujo * dtFlujo / 1000.0;
 
   if (startButtonState && !startCycle)
   {
     startCycle = HIGH;
+    tFlujo = millis();
+    volumen = 0;
   }
 
   if (startButtonState || startCycle)
   { // Start
     updatePressure();
+    flujo = readFlow();
+    dtFlujo = millis() - tFlujo;
+    tFlujo = millis();
+    volumen += (flujo * dtFlujo / 60000.0);
 
     if (((numCiclos % maxnumCiclos) == 0) && (numCiclos != 0))
       alarmaAmbu = HIGH;
@@ -1506,6 +1510,7 @@ void loop()
       dirState = HIGH;
       contadorCiclo = millis();
       FSM = 1;
+      volumen = 0;
       motorRun = HIGH;
       maxPressure2 = 0.0;
       hysterisis = LOW;
@@ -1513,7 +1518,7 @@ void loop()
 
     case 1: // Inhalation Cycle
 
-      if ((pressureRead > (setPressure)) && !hysterisis)
+      if ((pressureRead > (setPressure - 2.0)) && !hysterisis)
       {
         motorRun = LOW;
         hysterisis = HIGH;
@@ -1595,7 +1600,7 @@ void loop()
         checkSensor = HIGH;
       }
 
-      if (((millis() - contadorCiclo) >= int(exhaleTime * 1000 - 150)) || ((psvMode && (peepPressure - pressureRead > pTrigger))))
+      if (((millis() - contadorCiclo) >= int(exhaleTime * 1000 - 150)) || ((psvMode && ((peepPressure - pressureRead) > pTrigger))))
       {
         motorRun = LOW;
         FSM = 0;
