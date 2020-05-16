@@ -1206,7 +1206,7 @@ void loop()
     //    Serial.print("\t");
     // Serial.print(volumen * bpm);
     // Serial.print("\t");
-    // Serial.print(volumen);
+    // Serial.print(millis() - contadorCiclo);
     // Serial.print("\t");
     Serial.println(pressureRead);
 
