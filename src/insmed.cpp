@@ -630,7 +630,8 @@ void refreshLCDvalues()
   case 1:
     lcd.setCursor(5, 0);
     lcd.print(getPIPValue(), 1); // PIP
-    lcdIndex++;
+    lcdIndex = 15;
+    // lcdIndex++;
     break;
 
   case 2:
@@ -648,7 +649,8 @@ void refreshLCDvalues()
   case 3:
     lcd.setCursor(5, 1); // PEEP
     lcd.print(getPEEPValue(), 1);
-    lcdIndex++;
+    lcdIndex = 15;
+    // lcdIndex++;
     break;
 
   case 4:
