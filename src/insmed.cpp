@@ -1152,7 +1152,7 @@ void pinSetup()
 
 float checkBattery()
 {
-  return (ads.readADC_SingleEnded(2) / 906.14);
+  return (ads.readADC_SingleEnded(3) / 906.14);
 }
 
 /*******************( SETUP )***************************/
@@ -1466,7 +1466,7 @@ void loop()
     contadorBoton2 = millis();
   }
 
-  if (!digitalRead(rstAlarmPin))
+  if (digitalRead(rstAlarmPin))
     contadorRstAlarmas = millis();
 
   if ((millis() - contadorRstAlarmas) > rstAlarmasTimer)
