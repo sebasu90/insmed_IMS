@@ -126,8 +126,8 @@ int16_t adc2; // ADS1015 reading
 byte contCursor = 0;
 byte contCursor2 = 0;
 
-bool lockState = LOW;
-bool lockStateOld = LOW;
+bool lockState = HIGH;
+bool lockStateOld = HIGH;
 
 long currentTime;
 
@@ -552,7 +552,7 @@ long getNumCiclosValue()
 float readPressure()
 {
   adc0 = ads.readADC_SingleEnded(0);
-  return ((71.38 * (adc0 - offsetPresion) / offsetPresion) * 1.1128); // No scorrection
+  return ((71.38 * (adc0 - offsetPresion) / offsetPresion) * 1.1128); // No correction
 }
 
 ISR(TIMER1_COMPA_vect)
@@ -944,7 +944,7 @@ void updatePressure()
 
   if (pressureRead > -70.0 && FSM == 2) // if exhale cycle
   {
-    if ((((millis() - contadorCiclo) < 500) && (pressureRead < peepPressure)) || (((millis() - contadorCiclo) > 500) && (pressureRead < peepPressure) && (pressureRead > (peepPressure - 2.0))))
+    if ((((millis() - contadorCiclo) < 500) && (pressureRead < peepPressure)) || (((millis() - contadorCiclo) > 500) && (pressureRead < peepPressure) && (pressureRead > (peepPressure - 0.5))))
     {
       peepPressure = pressureRead;
       peepIndex = 0;
@@ -1210,7 +1210,9 @@ void setup() //Las instrucciones solo se ejecutan una vez, despues del arranque
   cargarLCD();
   contCursor2 = 2;
   //  t1 = millis();
-  lockState = HIGH;
+  lockState = LOW;
+
+  peepPressureLCD = readPressure();
 
   //  pinMode(MISO, OUTPUT); // have to send on master in so it set as output
   //  SPCR |= _BV(SPE); // turn on SPI in slave mode
@@ -1270,12 +1272,12 @@ void loop()
     //    Serial.print("\t");
     //    Serial.println(setPressure);
 
-    //    Serial.print(motorPulses);
-
-    // Serial.print("\t");
+    // Serial.print(motorPulses);
+    Serial.print(FSM);
+    Serial.print("\t");
     Serial.print(alarmaFugas);
     Serial.print("\t");
-    Serial.print(setPressure * 0.8);
+    Serial.print(peepPressure);
     Serial.print("\t");
     Serial.println(pressureRead);
 
@@ -1610,10 +1612,13 @@ void loop()
         hysterisis = HIGH;
       }
 
+      if (hysterisis && (pressureRead < (setPressure * 0.8)) && ((millis() - contadorCiclo) < int(inhaleTime * 1000)))
+        alarmaFugas = HIGH;
+
       if (((millis() - contadorCiclo) >= int(inhaleTime * 1000) + 150) || alarmaPresionAlta)
       { // Condition to change state
         motorRun = LOW;
-        if ((motorPulses < (650 + 30.3 * presControl)) && hysterisis)
+        if ((motorPulses < (550 + 30.3 * presControl)) && hysterisis)
           alarmaBloqueo = HIGH;
         else
         {
@@ -1628,9 +1633,7 @@ void loop()
           alarmaSensor2Old = LOW;
         }
 
-        if (hysterisis && (pressureRead < (setPressure * 0.8)))
-          alarmaFugas = HIGH;
-        else
+        if (pressureRead > (setPressure * 0.8))
         {
           alarmaFugas = LOW;
           alarmaFugasOld = LOW;
@@ -1645,17 +1648,16 @@ void loop()
           alarmaPresionBaja2Old = LOW;
           alarmaPresionBaja2 = LOW;
         }
-
-        hysterisis = LOW;
-        nBase = nBajada;
-        digitalWrite(dirPin, LOW);
-        dirState = LOW;
         contadorCiclo = millis();
         FSM = 22;
       }
       break;
 
     case 22:
+      hysterisis = LOW;
+      nBase = nBajada;
+      digitalWrite(dirPin, LOW);
+      dirState = LOW;
       maxPressureLCD = maxPressure2;
       peepPressure = 99.0;
       motorRun = HIGH;
