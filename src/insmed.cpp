@@ -169,9 +169,9 @@ long dt3;
 long dtFlujo;
 long tFlujo;
 
-#define lcdTimer 200
+#define lcdTimer 300
 #define serialTimer 100
-#define buttonTimer 50
+#define buttonTimer 100
 #define changeScreenTimer 2000
 #define ledTimer 250
 #define buzzerTimer 250
@@ -1277,11 +1277,11 @@ void loop()
     //    Serial.println(setPressure);
 
     // Serial.print(motorPulses);
-    Serial.print(millis() - contadorsilentAlarm);
+    Serial.print(buzzer);
     Serial.print("\t");
-    Serial.print(silentAlarm);
+    Serial.print(setAlarmas);
     Serial.print("\t");
-    Serial.print(peepPressure);
+    Serial.print(newAlarm);
     Serial.print("\t");
     Serial.println(pressureRead);
 
@@ -1308,23 +1308,23 @@ void loop()
 
   ////// Alarmas //////////
 
-  // if ((checkBattery() < minBattVoltage) && (checkBattery() > deadBattVoltage))
-  //   alarmaBateriaBaja = HIGH;
-  // else
-  // {
-  //   alarmaBateriaBaja = LOW;
-  //   alarmaBateriaBajaOld = LOW;
-  // }
+  if ((checkBattery() < minBattVoltage) && (checkBattery() > deadBattVoltage))
+    alarmaBateriaBaja = HIGH;
+  else
+  {
+    alarmaBateriaBaja = LOW;
+    alarmaBateriaBajaOld = LOW;
+  }
 
-  // if (checkBattery() < deadBattVoltage)
-  //   alarmaBateriaCero = HIGH;
-  // else
-  // {
-  //   alarmaBateriaCero = LOW;
-  //   alarmaBateriaCeroOld = LOW;
-  // }
+  if (checkBattery() < deadBattVoltage)
+    alarmaBateriaCero = HIGH;
+  else
+  {
+    alarmaBateriaCero = LOW;
+    alarmaBateriaCeroOld = LOW;
+  }
 
-  if (!digitalRead(batteryPin))
+  if (digitalRead(batteryPin))
   {
     alarmaBateria = HIGH;
   }
@@ -1408,7 +1408,7 @@ void loop()
 
   if (alarmaBateriaCero && !alarmaBateriaCeroOld)
   {
-    alarmaBateriaOld = HIGH;
+    alarmaBateriaCeroOld = HIGH;
     newAlarm = HIGH;
   }
 
@@ -1430,7 +1430,7 @@ void loop()
     newAlarm = HIGH;
   }
 
-  if (newAlarm)
+  if (newAlarm && !silentAlarm)
   {
     setAlarmas = HIGH;
     buzzer = HIGH;
