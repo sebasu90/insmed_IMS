@@ -71,6 +71,7 @@ bool alarmaBloqueo = LOW;
 bool alarmaBateria = LOW;
 bool alarmaBateriaBaja = LOW;
 bool alarmaPeep = LOW;
+bool silentAlarm = LOW;
 
 bool buzzer = LOW;
 
@@ -152,6 +153,7 @@ long contadorLecturapresion = 0;
 long contadorHorometro = 0;
 long contadorRstAlarmas = 0;
 long contadorUnlock = 0;
+long contadorsilentAlarm = 0;
 
 long tiempoBpmMeasure = 0;
 
@@ -167,9 +169,9 @@ long dt3;
 long dtFlujo;
 long tFlujo;
 
-#define lcdTimer 600
+#define lcdTimer 200
 #define serialTimer 100
-#define buttonTimer 130
+#define buttonTimer 50
 #define changeScreenTimer 2000
 #define ledTimer 250
 #define buzzerTimer 250
@@ -497,7 +499,6 @@ void updateEncoder()
     if (sum == 5 || sum == 6 || sum == 9)
       encoderValue[contCursor - 1]++;
     if (sum == 3 || sum == 12 || sum == 8)
-
       encoderValue[contCursor - 1]--;
 
     if (encoderValue[0] > 160)
@@ -524,11 +525,11 @@ void updateEncoder()
     if (encoderValue[3] > 4)
       encoderValue[3] = 4;
 
-    if (encoderValue[4] < 40)
-      encoderValue[4] = 40;
+    if (encoderValue[4] < 80)
+      encoderValue[4] = 80;
 
-    if (encoderValue[4] > 200)
-      encoderValue[4] = 200;
+    if (encoderValue[4] > 400)
+      encoderValue[4] = 400;
   }
 
   lastEncoded = encoded; //store this value for next time
@@ -970,6 +971,7 @@ void updatePressure()
 void displayAlarmas()
 {
   lcd.noBlink();
+  refreshLCD = LOW;
   if (numAlarmas == 0)
   {
     lcd.noCursor();
@@ -1275,9 +1277,9 @@ void loop()
     //    Serial.println(setPressure);
 
     // Serial.print(motorPulses);
-    Serial.print(FSM);
+    Serial.print(millis() - contadorsilentAlarm);
     Serial.print("\t");
-    Serial.print(alarmaFugas);
+    Serial.print(silentAlarm);
     Serial.print("\t");
     Serial.print(peepPressure);
     Serial.print("\t");
@@ -1306,23 +1308,23 @@ void loop()
 
   ////// Alarmas //////////
 
-  if ((checkBattery() < minBattVoltage) && (checkBattery() > deadBattVoltage))
-    alarmaBateriaBaja = HIGH;
-  else
-  {
-    alarmaBateriaBaja = LOW;
-    alarmaBateriaBajaOld = LOW;
-  }
+  // if ((checkBattery() < minBattVoltage) && (checkBattery() > deadBattVoltage))
+  //   alarmaBateriaBaja = HIGH;
+  // else
+  // {
+  //   alarmaBateriaBaja = LOW;
+  //   alarmaBateriaBajaOld = LOW;
+  // }
 
-  if (checkBattery() < deadBattVoltage)
-    alarmaBateriaCero = HIGH;
-  else
-  {
-    alarmaBateriaCero = LOW;
-    alarmaBateriaCeroOld = LOW;
-  }
+  // if (checkBattery() < deadBattVoltage)
+  //   alarmaBateriaCero = HIGH;
+  // else
+  // {
+  //   alarmaBateriaCero = LOW;
+  //   alarmaBateriaCeroOld = LOW;
+  // }
 
-  if (digitalRead(batteryPin))
+  if (!digitalRead(batteryPin))
   {
     alarmaBateria = HIGH;
   }
@@ -1451,7 +1453,7 @@ void loop()
 
   if ((!setAlarmas || newAlarm) && refreshLCD)
   {
-    if (newAlarm)
+    if (newAlarm && !silentAlarm)
     {
       displayAlarmas();
       newAlarm = LOW;
@@ -1464,10 +1466,29 @@ void loop()
     } // If no Alarmas
   }   // If refreshLCD
 
+  if (((millis() - contadorBoton) > buttonTimer) && digitalRead(buttonPin))
+  {
+    contadorBoton = millis();
+    if (!lockState)
+      switchCursor();
+
+    // End Else no Buzzer
+  } // End If Button Switch
+
   if (!isButtonPushDown())
   { // Anti-Bounce Button Switch
     contadorBoton = millis();
     contadorBoton2 = millis();
+  }
+
+  if (!silentAlarm)
+  {
+    contadorsilentAlarm = millis();
+  }
+
+  if ((millis() - contadorsilentAlarm) > 120000)
+  {
+    silentAlarm = LOW;
   }
 
   if (digitalRead(rstAlarmPin))
@@ -1479,6 +1500,35 @@ void loop()
     {
       contadorRstAlarmas = millis();
       buzzer = LOW;
+    }
+  }
+
+  if (((millis() - contadorRstAlarmas) > changeScreenTimer))
+  {
+    if (setAlarmas)
+    {
+      contadorRstAlarmas = millis();
+
+      silentAlarm = HIGH;
+
+      resetAlarmas();
+
+      presControlOld = 0.1;
+      peepPressureLCDOld = 0.1;
+      maxPressureLCDOld = 0.1;
+      bpmOld = 98;
+      numCiclosOld = 0;
+      ieRatioOld = 98;
+      lockStateOld = !lockState;
+      psvModeOld = !psvMode;
+      pTriggerOld = 98;
+      bpmMeasuredOld = 98;
+      cargarLCD();
+    }
+    else if (alarmas)
+    {
+      silentAlarm = LOW;
+      newAlarm = HIGH;
     }
   }
 
@@ -1505,30 +1555,6 @@ void loop()
     lockState = HIGH;
   }
 
-  if (((millis() - contadorRstAlarmas) > changeScreenTimer))
-  {
-    if (setAlarmas)
-    {
-      contadorRstAlarmas = millis();
-
-      resetAlarmas();
-
-      presControlOld = 0.1;
-      peepPressureLCDOld = 0.1;
-      maxPressureLCDOld = 0.1;
-      bpmOld = 98;
-      numCiclosOld = 0;
-      ieRatioOld = 98;
-      lockStateOld = !lockState;
-      psvModeOld = !psvMode;
-      pTriggerOld = 98;
-      bpmMeasuredOld = 98;
-      cargarLCD();
-    }
-    else if (alarmas)
-      newAlarm = HIGH;
-  }
-
   if (((millis() - contadorRstAlarmas) > 8000))
   {
     numCiclos = 0;
@@ -1536,15 +1562,6 @@ void loop()
     updatenumCiclos = 0;
     EEPROM.put(80, numCiclos);
   }
-
-  if (((millis() - contadorBoton) > buttonTimer))
-  {
-    contadorBoton = millis();
-    if (!lockState)
-      switchCursor();
-
-    // End Else no Buzzer
-  } // End If Button Switch
 
   // Read Control Parameters //
 
