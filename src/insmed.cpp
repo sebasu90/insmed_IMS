@@ -103,7 +103,7 @@ bool alarmaFugasOld = LOW;
 bool alarmaeStop = LOW;
 bool alarmaeStopOld = LOW;
 
-float pressMinLimit = 4.0;
+float pressMinLimit = 3.0;
 float pressMaxLimit = 41.0;
 
 float pressMinMovil = 0.0;
@@ -1277,9 +1277,9 @@ void loop()
     //    Serial.println(setPressure);
 
     // Serial.print(motorPulses);
-    Serial.print(buzzer);
+    Serial.print(motorPulses);
     Serial.print("\t");
-    Serial.print(setAlarmas);
+    Serial.print(400 + 30.3 * presControl);
     Serial.print("\t");
     Serial.print(newAlarm);
     Serial.print("\t");
@@ -1637,7 +1637,7 @@ void loop()
       if (((millis() - contadorCiclo) >= int(inhaleTime * 1000) + 150) || alarmaPresionAlta)
       { // Condition to change state
         motorRun = LOW;
-        if ((motorPulses < (550 + 30.3 * presControl)) && hysterisis)
+        if ((motorPulses < (400 + 30.3 * presControl)) && hysterisis)
           alarmaBloqueo = HIGH;
         else
         {
