@@ -3,6 +3,15 @@
 #include "src/LiquidCrystal_I2C/LiquidCrystal_I2C.h"
 #include "src/Adafruit_ADS1X15/Adafruit_ADS1015.h"
 
+/////////////////////////////////////////////
+/////////////////////////////////////////////
+//// ACA ESTA EL FACTOR DE CALIBRACION //////
+
+float factor_correccion = 1.0;
+
+/////////////////////////////////////////////
+/////////////////////////////////////////////
+
 bool motorRun = LOW;
 volatile int motorPulses = 0;
 int nBase;
@@ -10,8 +19,7 @@ volatile int frecIndex = 0;
 bool pulsePinState;
 bool dirState;
 int nSubida = 5;
-// nSubida estaba en 4
-int nBajada = 3;
+int nBajada = 4;
 
 int peepIndex = 0;
 
@@ -553,7 +561,7 @@ long getNumCiclosValue()
 float readPressure()
 {
   adc0 = ads.readADC_SingleEnded(0);
-  return ((71.38 * (adc0 - offsetPresion) / offsetPresion) * 1.1128); // No correction
+  return ((71.38 * (adc0 - offsetPresion) / offsetPresion) * 1.1128 * factor_correccion); // No correction
 }
 
 ISR(TIMER1_COMPA_vect)
