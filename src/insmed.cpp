@@ -972,10 +972,10 @@ void displayAlarmas()
 {
   lcd.noBlink();
   refreshLCD = LOW;
+  lcd.clear();
   if (numAlarmas == 0)
   {
     lcd.noCursor();
-    lcd.clear();
   }
   if (alarmaPresionAlta)
   {
@@ -1430,9 +1430,10 @@ void loop()
     newAlarm = HIGH;
   }
 
-  if (newAlarm && !silentAlarm)
+  if (newAlarm)
   {
-    setAlarmas = HIGH;
+    if (!silentAlarm)
+      setAlarmas = HIGH;
     buzzer = HIGH;
   }
 
@@ -1486,7 +1487,7 @@ void loop()
     contadorsilentAlarm = millis();
   }
 
-  if ((millis() - contadorsilentAlarm) > 120000)
+  if ((millis() - contadorsilentAlarm) > 60000)
   {
     silentAlarm = LOW;
   }
@@ -1500,6 +1501,7 @@ void loop()
     {
       contadorRstAlarmas = millis();
       buzzer = LOW;
+      newAlarm = LOW;
     }
   }
 
