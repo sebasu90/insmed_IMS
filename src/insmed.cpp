@@ -8,6 +8,7 @@
 //// ACA ESTA EL FACTOR DE CALIBRACION //////
 
 float factor_correccion = 1.0;
+float offSetPEEP = 0.0;
 
 /////////////////////////////////////////////
 /////////////////////////////////////////////
@@ -561,7 +562,7 @@ long getNumCiclosValue()
 float readPressure()
 {
   adc0 = ads.readADC_SingleEnded(0);
-  return ((71.38 * (adc0 - offsetPresion) / offsetPresion) * 1.1128 * factor_correccion); // No correction
+  return ((71.38 * (adc0 - offsetPresion) / offsetPresion) * 1.1128 * factor_correccion + offSetPEEP); // No correction
 }
 
 ISR(TIMER1_COMPA_vect)
