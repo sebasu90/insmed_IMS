@@ -1726,7 +1726,7 @@ void loop()
         checkSensor = HIGH;
       }
 
-      if (((millis() - contadorCiclo) >= int(exhaleTime * 1000 - 150)) || ((psvMode && ((peepPressure - pressureRead) > pTrigger))))
+      if (((millis() - contadorCiclo) >= int(exhaleTime * 1000 - 150)) || ((psvMode && ((peepPressureLCD - pressureRead) > pTrigger))))
       {
         motorRun = LOW;
         FSM = 0;
