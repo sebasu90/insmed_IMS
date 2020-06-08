@@ -7,7 +7,7 @@
 /////////////////////////////////////////////
 //// ACA ESTA EL FACTOR DE CALIBRACION //////
 
-float factor_correccion = 1.0;
+float factor_correccion = 1.0723;
 float offSetPEEP = 0.0;
 
 /////////////////////////////////////////////
@@ -1272,6 +1272,7 @@ void loop()
     outputString += ';';
 
     btSerial.print(outputString);
+
     //    Serial.println(outputString);
 
     //    SPI.transfer('a');
@@ -1286,12 +1287,12 @@ void loop()
     //    Serial.println(setPressure);
 
     // Serial.print(motorPulses);
-    Serial.print(motorPulses);
-    Serial.print("\t");
-    Serial.print(400 + 30.3 * presControl);
-    Serial.print("\t");
-    Serial.print(newAlarm);
-    Serial.print("\t");
+    // Serial.print(motorPulses);
+    // Serial.print("\t");
+    // Serial.print(400 + 30.3 * presControl);
+    // Serial.print("\t");
+    // Serial.print(newAlarm);
+    // Serial.print("\t");
     Serial.println(pressureRead);
 
     contadorLectura = millis();
