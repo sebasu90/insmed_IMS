@@ -217,7 +217,7 @@ long numCiclos; // Not so frequecnt EEPROM write
 byte updatenumCiclos = 0;
 
 //String bufferString;
-
+float pressureLastStep = 0.0;
 float maxPressure;        // Serial
 float maxPressure2;       // LCD
 float peepPressure = 0.0; // LCD
@@ -537,8 +537,8 @@ void updateEncoder()
     if (encoderValue[4] < 80)
       encoderValue[4] = 80;
 
-    if (encoderValue[4] > 400)
-      encoderValue[4] = 400;
+    if (encoderValue[4] > 240)
+      encoderValue[4] = 240;
   }
 
   lastEncoded = encoded; //store this value for next time
@@ -959,8 +959,24 @@ void updatePressure()
     if ((((millis() - contadorCiclo) < 500) && (pressureRead < peepPressure)) || (((millis() - contadorCiclo) > 500) && (pressureRead < peepPressure) && (pressureRead > (peepPressure - 0.5))))
     {
       peepPressure = pressureRead;
-      peepIndex = 0;
     }
+  }
+
+  if (pressureRead > -70.0 && FSM == 2)
+  {
+    if (((millis() - contadorCiclo) > 600))
+    {
+      // if (pressureRead > (pressureLastStep - 1.0))
+      pressureLastStep = pressureLastStep * 0.98 + 0.02 * pressureRead;
+    }
+    else
+    {
+      pressureLastStep = pressureRead;
+    }
+
+    // peepIndex = 0;
+    // }
+    // peepIndex++;
   }
 
   //  if (pressureRead > -70.0 && ((millis() - contadorCiclo) > 200) && FSM == 2) {
@@ -982,6 +998,7 @@ void displayAlarmas()
   lcd.noBlink();
   refreshLCD = LOW;
   lcd.clear();
+  numAlarmas = 0;
   if (numAlarmas == 0)
   {
     lcd.noCursor();
@@ -1290,10 +1307,13 @@ void loop()
     // Serial.print(motorPulses);
     // Serial.print("\t");
     // Serial.print(400 + 30.3 * presControl);
-    // Serial.print("\t");
-    // Serial.print(newAlarm);
-    // Serial.print("\t");
-    Serial.println(pressureRead);
+    Serial.print(millis() - contadorCiclo);
+    Serial.print("\t");
+    Serial.print(pressureLastStep);
+    Serial.print("\t");
+    Serial.print(pressureRead);
+    Serial.print("\t");
+    Serial.println(pressureLastStep - pressureRead);
 
     contadorLectura = millis();
 
@@ -1443,8 +1463,10 @@ void loop()
   if (newAlarm)
   {
     if (!silentAlarm)
+    {
       setAlarmas = HIGH;
-    buzzer = HIGH;
+      buzzer = HIGH;
+    }
   }
 
   if (((alarmaSensor || alarmaPresionAlta || alarmaPeep || alarmaPresionBaja || alarmaPresionBaja2 || alarmaAmbu || alarmaSensor2 || alarmaBloqueo || alarmaFugas) && startCycle) || alarmaBateria || alarmaBateriaBaja || alarmaBateriaCero)
@@ -1637,18 +1659,29 @@ void loop()
 
     case 1: // Inhalation Cycle
 
-      if ((pressureRead > (setPressure - 2.0)) && !hysterisis)
+      if ((pressureRead > (setPressure - 1.5)) && !hysterisis)
       {
+        // nBase = 40;
         motorRun = LOW;
         hysterisis = HIGH;
       }
 
-      if (hysterisis && (pressureRead < (setPressure * 0.8)) && ((millis() - contadorCiclo) < int(inhaleTime * 1000)))
-        alarmaFugas = HIGH;
+      if (hysterisis && (pressureRead < (setPressure * 0.95)))
+      {
+        nBase = 30;
+        motorRun = HIGH;
+      }
+
+      if (motorRun && (pressureRead > (setPressure - 1.0)))
+        motorRun = LOW;
 
       if (((millis() - contadorCiclo) >= int(inhaleTime * 1000) + 150) || alarmaPresionAlta)
       { // Condition to change state
         motorRun = LOW;
+
+        // if (hysterisis && (pressureRead < (setPressure * 0.8)))
+        //   alarmaFugas = HIGH;
+
         if ((motorPulses < (400 + 30.3 * presControl)) && hysterisis)
           alarmaBloqueo = HIGH;
         else
@@ -1727,7 +1760,7 @@ void loop()
         checkSensor = HIGH;
       }
 
-      if (((millis() - contadorCiclo) >= int(exhaleTime * 1000 - 150)) || ((psvMode && ((peepPressureLCD - pressureRead) > pTrigger))))
+      if (((millis() - contadorCiclo) >= int(exhaleTime * 1000 - 150)) || ((psvMode && ((millis() - contadorCiclo) >= 650) && checkSensor && ((pressureLastStep - pressureRead) > (pTrigger * 0.5)))))
       {
         motorRun = LOW;
         FSM = 0;
