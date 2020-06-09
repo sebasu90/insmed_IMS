@@ -1,3 +1,6 @@
+// Version pruebas UdeA 07/06/2020
+// Se calibró asistido, control de presión (casos resistencia alta).
+
 #include <EEPROM.h>
 #include <Wire.h>
 #include "src/LiquidCrystal_I2C/LiquidCrystal_I2C.h"
@@ -1307,13 +1310,13 @@ void loop()
     // Serial.print(motorPulses);
     // Serial.print("\t");
     // Serial.print(400 + 30.3 * presControl);
-    Serial.print(millis() - contadorCiclo);
-    Serial.print("\t");
-    Serial.print(pressureLastStep);
-    Serial.print("\t");
-    Serial.print(pressureRead);
-    Serial.print("\t");
-    Serial.println(pressureLastStep - pressureRead);
+    // Serial.print(millis() - contadorCiclo);
+    // Serial.print("\t");
+    // Serial.print(pressureLastStep);
+    // Serial.print("\t");
+    // Serial.print(pressureRead);
+    // Serial.print("\t");
+    Serial.println(pressureRead);
 
     contadorLectura = millis();
 
@@ -1486,7 +1489,7 @@ void loop()
 
   if ((!setAlarmas || newAlarm) && refreshLCD)
   {
-    if (newAlarm && !silentAlarm)
+    if (newAlarm && !silentAlarm && alarmas)
     {
       displayAlarmas();
       newAlarm = LOW;
