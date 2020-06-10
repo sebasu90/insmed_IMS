@@ -1245,6 +1245,9 @@ void setup() //Las instrucciones solo se ejecutan una vez, despues del arranque
   //  t1 = millis();
   lockState = LOW;
 
+  psvMode = readEncoderValue(4) % 2;
+  psvModeOld = !psvMode;
+
   peepPressureLCD = readPressure();
 
   //  pinMode(MISO, OUTPUT); // have to send on master in so it set as output
