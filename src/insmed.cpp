@@ -1,5 +1,4 @@
-// Version pruebas UdeA 07/06/2020
-// Se calibró asistido, control de presión (casos resistencia alta).
+// Version Final Cartagena
 
 #include <EEPROM.h>
 #include <Wire.h>
@@ -10,8 +9,8 @@
 /////////////////////////////////////////////
 //// ACA ESTA EL FACTOR DE CALIBRACION //////
 
-float factor_correccion = 1.0723;
-float offSetPEEP = 0.0;
+float factor_correccion = 1.0903;
+float offSetPEEP = -0.9514;
 
 /////////////////////////////////////////////
 /////////////////////////////////////////////
@@ -22,8 +21,9 @@ int nBase;
 volatile int frecIndex = 0;
 bool pulsePinState;
 bool dirState;
-int nSubida = 5;
+int nSubida = 6;
 int nBajada = 4;
+int nSubida2 = 15; //30
 
 int peepIndex = 0;
 
@@ -540,8 +540,8 @@ void updateEncoder()
     if (encoderValue[4] < 80)
       encoderValue[4] = 80;
 
-    if (encoderValue[4] > 240)
-      encoderValue[4] = 240;
+    if (encoderValue[4] > 396)
+      encoderValue[4] = 396;
   }
 
   lastEncoded = encoded; //store this value for next time
@@ -1468,10 +1468,10 @@ void loop()
 
   if (newAlarm)
   {
+    buzzer = HIGH;
     if (!silentAlarm)
     {
       setAlarmas = HIGH;
-      buzzer = HIGH;
     }
   }
 
@@ -1545,7 +1545,7 @@ void loop()
 
   if (((millis() - contadorRstAlarmas) > changeScreenTimer))
   {
-    if (setAlarmas)
+    if (setAlarmas) // Salir de pantalla de alarmas
     {
       contadorRstAlarmas = millis();
 
@@ -1565,11 +1565,24 @@ void loop()
       bpmMeasuredOld = 98;
       cargarLCD();
     }
-    else if (alarmas)
+    else
     {
-      silentAlarm = LOW;
-      newAlarm = HIGH;
+      if (alarmas) // Volver a entrar a pantalla Alarmas
+      {
+        contadorRstAlarmas = millis();
+        silentAlarm = LOW;
+        newAlarm = HIGH;
+      }
     }
+  }
+
+  if (((millis() - contadorRstAlarmas) > 8000))
+  {
+    contadorRstAlarmas = millis();
+    numCiclos = 0;
+    numCiclosOld = 99;
+    updatenumCiclos = 0;
+    EEPROM.put(80, numCiclos);
   }
 
   if ((millis() - contadorBoton2) > changeScreenTimer)
@@ -1593,14 +1606,6 @@ void loop()
     contCursor = 0;
     lcd.noBlink();
     lockState = HIGH;
-  }
-
-  if (((millis() - contadorRstAlarmas) > 8000))
-  {
-    numCiclos = 0;
-    numCiclosOld = 99;
-    updatenumCiclos = 0;
-    EEPROM.put(80, numCiclos);
   }
 
   // Read Control Parameters //
@@ -1665,7 +1670,7 @@ void loop()
 
     case 1: // Inhalation Cycle
 
-      if ((pressureRead > (setPressure - 1.5)) && !hysterisis)
+      if ((pressureRead > (setPressure - 2.0)) && !hysterisis) // 1.5
       {
         // nBase = 40;
         motorRun = LOW;
@@ -1674,7 +1679,7 @@ void loop()
 
       if (hysterisis && (pressureRead < (setPressure * 0.95)))
       {
-        nBase = 30;
+        nBase = nSubida2;
         motorRun = HIGH;
       }
 
