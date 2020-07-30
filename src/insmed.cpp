@@ -12,6 +12,7 @@
 
 float factor_correccion = 1.0903;
 float offSetPEEP = -0.9514;
+float volume = 0.0;
 
 /////////////////////////////////////////////
 /////////////////////////////////////////////
@@ -235,6 +236,7 @@ float pTrigger;
 //float compliance;
 float volumen = 0;
 float flujo;
+bool showVolume = LOW;
 
 // Process Variables
 
@@ -806,16 +808,26 @@ void refreshLCDvalues()
       lcdIndex = 13;
     else
     {
-      lcd.setCursor(12, 3);
-      lcd.print("      ");
+      lcd.setCursor(11, 3);
+      lcd.print("       ");
       lcdIndex++;
     }
     break;
 
   case 12:
-    lcd.setCursor(12, 3);
-    lcd.print(getNumCiclosValue());
-    numCiclosOld = getNumCiclosValue();
+    lcd.setCursor(11, 3);
+    if (numCiclos % 2)
+    {
+      lcd.print('#');
+      lcd.print(getNumCiclosValue());
+      numCiclosOld = getNumCiclosValue();
+    }
+    else
+    {
+      lcd.print("Vt ");
+      lcd.print(volumen, 0);
+      numCiclosOld = getNumCiclosValue();
+    }
     lcdIndex++;
     break;
 
