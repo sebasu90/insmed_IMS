@@ -1,5 +1,4 @@
-// Version Final Cartagena
-// Agregar medicion de volumen Tidal
+// Actualizacion PEEP Auteco 03/08/2020
 
 #include <EEPROM.h>
 #include <Wire.h>
@@ -14,6 +13,7 @@ float factor_correccion = 1.0903;
 float offSetPEEP = -0.9514;
 float volume = 0.0;
 
+/////////////////////////////////////////////
 /////////////////////////////////////////////
 /////////////////////////////////////////////
 
@@ -816,7 +816,7 @@ void refreshLCDvalues()
 
   case 12:
     lcd.setCursor(11, 3);
-    if (numCiclos % 2)
+    if ((numCiclos % 2) || !startCycle || volumen < 30)
     {
       lcd.print('#');
       lcd.print(getNumCiclosValue());
@@ -827,6 +827,7 @@ void refreshLCDvalues()
       lcd.print("Vt ");
       lcd.print(volumen, 0);
       numCiclosOld = getNumCiclosValue();
+      volumen = 0;
     }
     lcdIndex++;
     break;
@@ -951,7 +952,7 @@ void resetAlarmas()
 float readFlow()
 {
   adc2 = ads.readADC_SingleEnded(1);
-  return ((adc2 - offsetFlujo) * 0.3458);
+  return ((adc2 - offsetFlujo) * 34.58);
   //return (48.64 * (71.38 * (adc2 - offsetFlujo) / offsetFlujo) * 1.1128); // No scorrection
 }
 
@@ -972,7 +973,9 @@ void updatePressure()
 
   if (pressureRead > -70.0 && FSM == 2) // if exhale cycle
   {
-    if ((((millis() - contadorCiclo) < 500) && (pressureRead < peepPressure)) || (((millis() - contadorCiclo) > 500) && (pressureRead < peepPressure) && (pressureRead > (peepPressure - 0.5))))
+    //if ((((millis() - contadorCiclo) < 500) && (pressureRead < peepPressure)) || (((millis() - contadorCiclo) > 500) && (pressureRead < peepPressure) && (pressureRead > (peepPressure - 0.5))))
+    // if ((((millis() - contadorCiclo) < 500)) || (((millis() - contadorCiclo) > 500) && (pressureRead > (peepPressure - 0.5))))
+    if ((((millis() - contadorCiclo) < 500)) || (((millis() - contadorCiclo) > 500) && (pressureRead > (peepPressure - 0.8))))
     {
       peepPressure = pressureRead;
     }
@@ -1332,7 +1335,9 @@ void loop()
     // Serial.print("\t");
     // Serial.print(pressureRead);
     // Serial.print("\t");
-    Serial.println(pressureRead);
+    Serial.print(pressureRead);
+    Serial.print("    ");
+    Serial.println(volumen);
 
     contadorLectura = millis();
 
@@ -1837,7 +1842,6 @@ void loop()
   }   // End machine cycle
 } //End Loop
 
-///////////////////////////////////////////////////
 ///////////////////////////////////////////////////
 ///////////////////////////////////////////////////
 
