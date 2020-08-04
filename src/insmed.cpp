@@ -26,6 +26,7 @@ bool dirState;
 int nSubida = 6;
 int nBajada = 4;
 int nSubida2 = 15; //30
+const int ndelaypeep = 20;
 
 int peepIndex = 0;
 
@@ -222,11 +223,13 @@ long numCiclos; // Not so frequecnt EEPROM write
 byte updatenumCiclos = 0;
 
 //String bufferString;
+float peepPressureVector[ndelaypeep];
 float pressureLastStep = 0.0;
 float maxPressure;        // Serial
 float maxPressure2;       // LCD
 float peepPressure = 0.0; // LCD
 float lastpeepPressure = 0.0;
+float lastpeep = 0.0;
 
 float maxPressureLCD;
 float peepPressureLCD;
@@ -975,10 +978,16 @@ void updatePressure()
   {
     //if ((((millis() - contadorCiclo) < 500) && (pressureRead < peepPressure)) || (((millis() - contadorCiclo) > 500) && (pressureRead < peepPressure) && (pressureRead > (peepPressure - 0.5))))
     // if ((((millis() - contadorCiclo) < 500)) || (((millis() - contadorCiclo) > 500) && (pressureRead > (peepPressure - 0.5))))
-    if ((((millis() - contadorCiclo) < 500)) || (((millis() - contadorCiclo) > 500) && (pressureRead > (peepPressure - 0.8))))
+    // if ((((millis() - contadorCiclo) < 500)) || (((millis() - contadorCiclo) > 500) && (pressureRead > (peepPressure - 0.8))))
+    // {
+    //   peepPressure = pressureRead;
+    // }
+    peepPressureVector[ndelaypeep] = pressureRead;
+    for (byte indexPeep = 0; indexPeep < ndelaypeep; indexPeep++)
     {
-      peepPressure = pressureRead;
+      peepPressureVector[indexPeep] = peepPressureVector[indexPeep + 1];
     }
+    peepPressure = peepPressureVector[0];
   }
 
   if (pressureRead > -70.0 && FSM == 2)
@@ -986,7 +995,7 @@ void updatePressure()
     if (((millis() - contadorCiclo) > 600))
     {
       // if (pressureRead > (pressureLastStep - 1.0))
-      pressureLastStep = pressureLastStep * 0.98 + 0.02 * pressureRead;
+      pressureLastStep = pressureLastStep * 0.96 + 0.04 * pressureRead;
     }
     else
     {
