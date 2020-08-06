@@ -1275,14 +1275,6 @@ void setup() //Las instrucciones solo se ejecutan una vez, despues del arranque
 
     peepPressureLCD = readPressure();
 
-    //  pinMode(MISO, OUTPUT); // have to send on master in so it set as output
-    //  SPCR |= _BV(SPE); // turn on SPI in slave mode
-
-    //  SPI.begin();
-    //  SPI.setClockDivider(SPI_CLOCK_DIV2);//divide the clock by 4
-
-    //  SPI.attachInterrupt(); // turn on interrupt
-
 } //Fin del Setup
 
 /*******************( LOOP )****************************/
