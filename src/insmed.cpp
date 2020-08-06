@@ -1332,8 +1332,8 @@ void loop()
         // Serial.print(400 + 30.3 * presControl);
         // Serial.print(millis() - contadorCiclo);
         // Serial.print("\t");
-        // Serial.print(pressureLastStep);
-        // Serial.print("\t");
+        Serial.print(pressureLastStep);
+        Serial.print("\t");
         // Serial.print(pressureRead);
         // Serial.print("\t");
         // Serial.print(pressureRead);
@@ -1790,7 +1790,7 @@ void loop()
                 checkSensor = HIGH;
             }
 
-            if (((millis() - contadorCiclo) >= int(exhaleTime * 1000 - 150)) || ((psvMode && ((millis() - contadorCiclo) >= 650) && checkSensor && ((pressureLastStep - pressureRead) > (pTrigger * 0.5)))))
+            if (((millis() - contadorCiclo) >= int(exhaleTime * 1000 - 150)) || ((psvMode && ((millis() - contadorCiclo) >= 500) && checkSensor && ((pressureLastStep - pressureRead) > (pTrigger * 0.4)))))
             {
                 motorRun = LOW;
                 FSM = 0;
