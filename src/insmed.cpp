@@ -1,4 +1,4 @@
-// Actualizacion PEEP Auteco 03/08/2020
+// Actualizacion PEEP UdeA 06/08/2020
 
 #include <EEPROM.h>
 #include <Wire.h>
@@ -30,7 +30,7 @@ const int ndelaypeep = 20;
 
 int peepIndex = 0;
 
-byte unlockChar[8] ={
+byte unlockChar[8] = {
     B01110,
     B10001,
     B10001,
@@ -38,9 +38,9 @@ byte unlockChar[8] ={
     B11111,
     B11011,
     B11011,
-    B11111 };
+    B11111};
 
-byte lockChar[8] ={
+byte lockChar[8] = {
     B01110,
     B10001,
     B10000,
@@ -48,7 +48,7 @@ byte lockChar[8] ={
     B11111,
     B11011,
     B11011,
-    B11111 };
+    B11111};
 
 LiquidCrystal_I2C lcd(0x38, 20, 4);
 
@@ -291,7 +291,7 @@ int readBpmValue()
     return readEncoderValue(2);
 };
 
-/*
+    /*
 Variables:
 
 presControl
@@ -1522,7 +1522,7 @@ void loop()
             refreshLCDvalues();
 
         } // If no Alarmas
-    }   // If refreshLCD
+    }     // If refreshLCD
 
     if (((millis() - contadorBoton) > buttonTimer) && digitalRead(buttonPin))
     {
@@ -1702,7 +1702,7 @@ void loop()
                 motorRun = HIGH;
             }
 
-            if (motorRun && (pressureRead >(setPressure - 1.0)))
+            if (motorRun && (pressureRead > (setPressure - 1.0)))
                 motorRun = LOW;
 
             if (((millis() - contadorCiclo) >= int(inhaleTime * 1000) + 150) || alarmaPresionAlta)
@@ -1773,7 +1773,7 @@ void loop()
 
                 if (!checkSensor)
                 { // Flanco subida sensor regreso
-                  // Si hay presion baja
+                    // Si hay presion baja
                     if ((maxPressure2 - peepPressure) < pressMinLimit)
                         contadorAlarmaPresionBaja++;
                     else
@@ -1840,7 +1840,7 @@ void loop()
         default:
             break;
         } // End cases
-    }   // End machine cycle
+    }     // End machine cycle
 } //End Loop
 
 ///////////////////////////////////////////////////
