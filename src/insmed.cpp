@@ -1332,8 +1332,14 @@ void loop()
         // Serial.print(400 + 30.3 * presControl);
         // Serial.print(millis() - contadorCiclo);
         // Serial.print("\t");
-        Serial.print(pressureLastStep);
-        Serial.print("\t");
+        // Serial.print(pressureLastStep);
+        // Serial.print("\t");
+        // Serial.print(maxPressure2);
+        // Serial.print("\t");
+        // Serial.print(peepPressure);
+        // Serial.print("    ");
+        // Serial.print(pressMinLimit);
+        // Serial.print("\t");
         // Serial.print(pressureRead);
         // Serial.print("\t");
         // Serial.print(pressureRead);
@@ -1774,24 +1780,24 @@ void loop()
                 if (!checkSensor)
                 { // Flanco subida sensor regreso
                     // Si hay presion baja
-                    if ((maxPressure2 - peepPressure) < pressMinLimit)
-                        contadorAlarmaPresionBaja++;
-                    else
-                        contadorAlarmaPresionBaja = 0;
-
-                    if (contadorAlarmaPresionBaja > 1)
-                        alarmaPresionBaja = HIGH;
-                    else
-                    {
-                        alarmaPresionBaja = LOW;
-                        alarmaPresionBajaOld = LOW;
-                    }
                 }
                 checkSensor = HIGH;
             }
 
             if (((millis() - contadorCiclo) >= int(exhaleTime * 1000 - 150)) || ((psvMode && ((millis() - contadorCiclo) >= 500) && checkSensor && ((pressureLastStep - pressureRead) > (pTrigger * 0.4)))))
             {
+                if ((maxPressure2 - peepPressure) < pressMinLimit)
+                    contadorAlarmaPresionBaja++;
+                else
+                    contadorAlarmaPresionBaja = 0;
+
+                if (contadorAlarmaPresionBaja > 1)
+                    alarmaPresionBaja = HIGH;
+                else
+                {
+                    alarmaPresionBaja = LOW;
+                    alarmaPresionBajaOld = LOW;
+                }
                 motorRun = LOW;
                 FSM = 0;
                 bpmMeasured = 60000.0 / (millis() - tiempoBpmMeasure) + 1;
