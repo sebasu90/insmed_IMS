@@ -1491,11 +1491,16 @@ void loop()
         newAlarm = HIGH;
     }
 
+    if (silentAlarm)
+    {
+        newAlarm = LOW;
+    }
+
     if (newAlarm)
     {
-        buzzer = HIGH;
         if (!silentAlarm)
         {
+            buzzer = HIGH;
             setAlarmas = HIGH;
         }
     }
@@ -1526,7 +1531,6 @@ void loop()
         else if (numAlarmas == 0)
         {
             refreshLCDvalues();
-
         } // If no Alarmas
     }     // If refreshLCD
 
@@ -1535,7 +1539,6 @@ void loop()
         contadorBoton = millis();
         if (!lockState)
             switchCursor();
-
         // End Else no Buzzer
     } // End If Button Switch
 
@@ -1643,7 +1646,9 @@ void loop()
 
     ieRatio = readIeRatioValue();
     bpm = readBpmValue();
+
     inhaleTime = 60.0 / (bpm * (1 + ieRatio));
+
     exhaleTime = inhaleTime * ieRatio;
 
     startButtonState = (!digitalRead(startButton) && !alarmaBateriaCero);
@@ -1784,7 +1789,7 @@ void loop()
                 checkSensor = HIGH;
             }
 
-            if (((millis() - contadorCiclo) >= int(exhaleTime * 1000 - 150)) || ((psvMode && ((millis() - contadorCiclo) >= 500) && checkSensor && ((pressureLastStep - pressureRead) > (pTrigger * 0.4)))))
+            if (((millis() - contadorCiclo) >= int(exhaleTime * 1000 - 150)) || ((psvMode && ((millis() - contadorCiclo) >= exhaleTime / 10) && checkSensor && ((pressureLastStep - pressureRead) > (pTrigger * 0.4)))))
             {
                 if ((maxPressure2 - peepPressure) < pressMinLimit)
                     contadorAlarmaPresionBaja++;
