@@ -448,10 +448,10 @@ public:
 
     void print(String in)
     {
-        //      if (handShaked)
-        //      {
-        Serial1.print(in);
-        //      }
+        if (handShaked)
+        {
+            Serial1.print(in);
+        }
     }
 
     bool presControlAvailable()
@@ -1317,14 +1317,16 @@ void loop()
 
         //    SPI.transfer('a');
 
-        //    Serial.print(peepPressure);
-        //    Serial.print("\t");
-        //    Serial.print(peepIndex);
-        //    Serial.print("\t");
-        //    Serial.print(maxPressure);
+        Serial.print(silentAlarm);
+        Serial.print("\t");
+        Serial.print(buzzer);
+        Serial.print("\t");
+        Serial.print(newAlarm);
+        Serial.print("\t");
+        Serial.print(alarmas);
         //    maxPressure = 0.0;
-        //    Serial.print("\t");
-        //    Serial.println(setPressure);
+        Serial.print("\t");
+        Serial.println(setAlarmas);
 
         // Serial.print(motorPulses);
         // Serial.print(motorPulses);
@@ -1344,7 +1346,7 @@ void loop()
         // Serial.print("\t");
         // Serial.print(pressureRead);
         // Serial.print("    ");
-        Serial.println(pressureRead);
+        // Serial.println(pressureRead);
 
         contadorLectura = millis();
 
@@ -1491,19 +1493,10 @@ void loop()
         newAlarm = HIGH;
     }
 
-    if (silentAlarm)
-    {
-        newAlarm = LOW;
-    }
-
-    if (newAlarm)
-    {
-        if (!silentAlarm)
-        {
-            buzzer = HIGH;
-            setAlarmas = HIGH;
-        }
-    }
+    // if (silentAlarm)
+    // {
+    //     newAlarm = LOW;
+    // }
 
     if (((alarmaSensor || alarmaPresionAlta || alarmaPeep || alarmaPresionBaja || alarmaPresionBaja2 || alarmaAmbu || alarmaSensor2 || alarmaBloqueo || alarmaFugas) && startCycle) || alarmaBateria || alarmaBateriaBaja || alarmaBateriaCero)
     {
@@ -1514,6 +1507,15 @@ void loop()
 
     // Refrescar LCD // Solo se hace en Stop o al fin del ciclo
 
+    if (newAlarm && alarmas)
+    {
+        if (!silentAlarm)
+        {
+            buzzer = HIGH;
+            // setAlarmas = HIGH;
+        }
+    }
+
     if ((millis() - contadorLCD) > lcdTimer)
     { // Refresh LCD
         contadorLCD = millis();
@@ -1522,8 +1524,9 @@ void loop()
 
     if ((!setAlarmas || newAlarm) && refreshLCD)
     {
-        if (newAlarm && !silentAlarm && alarmas)
+        if (newAlarm && alarmas && !silentAlarm)
         {
+            setAlarmas = HIGH;
             displayAlarmas();
             newAlarm = LOW;
         }
