@@ -1,4 +1,4 @@
-// Actualizacion PEEP UdeA 06/08/2020
+// Actualizacion PEEP UdeA 28/08/2020
 
 #include <EEPROM.h>
 #include <Wire.h>
