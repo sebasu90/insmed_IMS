@@ -1,4 +1,4 @@
-// Actualizacion PEEP UdeA 28/08/2020
+// Actualizacion PEEP UdeA 16/10/2020
 
 #include <EEPROM.h>
 #include <Wire.h>
@@ -55,14 +55,14 @@ LiquidCrystal_I2C lcd(0x38, 20, 4);
 Adafruit_ADS1115 ads(0x48);
 
 // Pin definitions
-#define encoderPinA 7 // Throttle
-#define encoderPinB 11
-#define buttonPin 10
+#define encoderPinA 7  // Throttle
+#define encoderPinB 11 // Throttle -
+#define buttonPin 10   // Boton navegar entre parametros
 
-#define startButton 4
-#define batteryPin 8
+#define startButton 4  // Pulso de inicio o Standby
+#define batteryPin 8   // Rele que detecta bateria baja
 #define sensorPin A1   // Inductive sensor to control motor range
-#define rstAlarmPin A0 // Start switch
+#define rstAlarmPin A0 // Boton de silencio
 
 // Motor outputs
 #define pulsePin A2 // Motor drive 3
@@ -256,8 +256,17 @@ int presControl;
 float setPressure = 0.0;
 float pressure = 0.0;
 float pressureRead = 0;
+
+float dPressure;
 int16_t offsetPresion = 0;
 int16_t offsetFlujo = 0;
+
+float umbralDerivada0 = 0.08;
+float umbralAsistido = -0.5;
+
+bool flagAsistido = LOW;
+bool flagPeep = LOW;
+bool flagTos = LOW;
 
 int readEncoderValue(byte index)
 {
@@ -976,41 +985,41 @@ void updatePressure()
 
     if (pressureRead > -70.0 && FSM == 2) // if exhale cycle
     {
-        //if ((((millis() - contadorCiclo) < 500) && (pressureRead < peepPressure)) || (((millis() - contadorCiclo) > 500) && (pressureRead < peepPressure) && (pressureRead > (peepPressure - 0.5))))
-        // if ((((millis() - contadorCiclo) < 500)) || (((millis() - contadorCiclo) > 500) && (pressureRead > (peepPressure - 0.5))))
-        // if ((((millis() - contadorCiclo) < 500)) || (((millis() - contadorCiclo) > 500) && (pressureRead > (peepPressure - 0.8))))
-        // {
-        //   peepPressure = pressureRead;
-        // }
         peepPressureVector[ndelaypeep] = pressureRead;
         for (byte indexPeep = 0; indexPeep < ndelaypeep; indexPeep++)
         {
             peepPressureVector[indexPeep] = peepPressureVector[indexPeep + 1];
         }
-        peepPressure = peepPressureVector[0];
-    }
 
-    if (pressureRead > -70.0 && FSM == 2)
-    {
-        if (((millis() - contadorCiclo) > 800))
+        dPressure = peepPressureVector[ndelaypeep] - peepPressureVector[ndelaypeep - 4];
+
+        if ((dPressure < umbralDerivada0) && (dPressure > -umbralDerivada0) && !flagAsistido && !flagTos)
         {
-            // if (pressureRead > (pressureLastStep - 1.0))
-            pressureLastStep = pressureLastStep * 0.96 + 0.04 * pressureRead;
-        }
-        else
-        {
-            pressureLastStep = pressureRead;
+            flagPeep = HIGH;
+            peepPressure = pressureRead;
         }
 
-        // peepIndex = 0;
+        if ((dPressure < umbralAsistido) && flagPeep)
+        {
+            flagAsistido = HIGH;
+        }
+
+        if ((dPressure > 1.0) && flagPeep)
+        {
+            flagTos = HIGH;
+            flagPeep = LOW;
+            flagAsistido = LOW;
+        }
+        // if (((millis() - contadorCiclo) > 800))
+        // {
+        //     // if (pressureRead > (pressureLastStep - 1.0))
+        //     pressureLastStep = pressureLastStep * 0.96 + 0.04 * pressureRead;
         // }
-        // peepIndex++;
+        // else
+        // {
+        //     pressureLastStep = pressureRead;
+        // }
     }
-
-    //  if (pressureRead > -70.0 && ((millis() - contadorCiclo) > 200) && FSM == 2) {
-    //    peepIndex++;
-    //    peepPressure = (pressureRead + peepPressure * peepIndex) / (peepIndex + 1);
-    //  }
 
     if (peepPressure < 0.0)
         peepPressure = 0.0;
@@ -1018,7 +1027,6 @@ void updatePressure()
     setPressure = presControl + peepPressureLCD;
     pressMinMovil = setPressure * 0.8;
     pressMaxMovil = setPressure * 1.2;
-    //  }
 }
 
 void displayAlarmas()
@@ -1317,16 +1325,17 @@ void loop()
 
         //    SPI.transfer('a');
 
-        Serial.print(silentAlarm);
+        Serial.print(pressureRead);
         Serial.print("\t");
-        Serial.print(buzzer);
+        Serial.print(peepPressure);
         Serial.print("\t");
-        Serial.print(newAlarm);
+        Serial.print(dPressure);
         Serial.print("\t");
-        Serial.print(alarmas);
-        //    maxPressure = 0.0;
+        Serial.print(flagAsistido);
         Serial.print("\t");
-        Serial.println(setAlarmas);
+        Serial.print(flagPeep);
+        Serial.print("\t");
+        Serial.println(peepPressure - pressureRead);
 
         // Serial.print(motorPulses);
         // Serial.print(motorPulses);
@@ -1501,9 +1510,13 @@ void loop()
     if (((alarmaSensor || alarmaPresionAlta || alarmaPeep || alarmaPresionBaja || alarmaPresionBaja2 || alarmaAmbu || alarmaSensor2 || alarmaBloqueo || alarmaFugas) && startCycle) || alarmaBateria || alarmaBateriaBaja || alarmaBateriaCero)
     {
         alarmas = HIGH;
+        // buzzer = HIGH;
     }
     else
+    {
         alarmas = LOW;
+        buzzer = LOW;
+    }
 
     // Refrescar LCD // Solo se hace en Stop o al fin del ciclo
 
@@ -1556,7 +1569,7 @@ void loop()
         contadorsilentAlarm = millis();
     }
 
-    if ((millis() - contadorsilentAlarm) > 60000)
+    if ((millis() - contadorsilentAlarm) > 120000)
     {
         silentAlarm = LOW;
     }
@@ -1767,7 +1780,6 @@ void loop()
             digitalWrite(dirPin, LOW);
             dirState = LOW;
             maxPressureLCD = maxPressure2;
-            peepPressure = 99.0;
             motorRun = HIGH;
             contadorCiclo = millis();
             FSM = 2;
@@ -1792,7 +1804,7 @@ void loop()
                 checkSensor = HIGH;
             }
 
-            if (((millis() - contadorCiclo) >= int(exhaleTime * 1000 - 150)) || ((psvMode && ((millis() - contadorCiclo) >= exhaleTime / 10) && checkSensor && ((pressureLastStep - pressureRead) > (pTrigger * 0.4)))))
+            if (((millis() - contadorCiclo) >= int(exhaleTime * 1000 - 150)) || ((psvMode && ((millis() - contadorCiclo) >= exhaleTime / 10) && checkSensor && (flagAsistido) && ((peepPressure - pressureRead) > (pTrigger - 1.0)))))
             {
                 if ((maxPressure2 - peepPressure) < pressMinLimit)
                     contadorAlarmaPresionBaja++;
@@ -1807,6 +1819,9 @@ void loop()
                     alarmaPresionBajaOld = LOW;
                 }
                 motorRun = LOW;
+                flagAsistido = LOW;
+                flagPeep = LOW;
+                flagTos = LOW;
                 FSM = 0;
                 bpmMeasured = 60000.0 / (millis() - tiempoBpmMeasure) + 1;
                 tiempoBpmMeasure = millis();
