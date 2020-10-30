@@ -1,4 +1,4 @@
-// Actualizacion PEEP UdeA 16/10/2020
+// Actualizacion PEEP UdeA 30/10/2020
 
 #include <EEPROM.h>
 #include <Wire.h>
@@ -9,12 +9,23 @@
 /////////////////////////////////////////////
 //// ACA ESTA EL FACTOR DE CALIBRACION //////
 
-float factor_correccion = 1.0903;
-float offSetPEEP = -0.9514;
+float factor_correccion = 1.1619;
+float offSetPEEP = -2.4221;
 float volume = 0.0;
 
-/////////////////////////////////////////////
-/////////////////////////////////////////////
+// Correccion Flujo
+
+float factor_correccion_flujo = 345.8;
+
+// Velocidades
+
+int nSubida = 6;
+int nBajada = 4;
+int nSubida2 = 15; //30
+float puntoReinicio = 0.95;
+float puntoParada1 = 2.0;
+float puntoParada2 = 1.0;
+
 /////////////////////////////////////////////
 
 bool motorRun = LOW;
@@ -23,9 +34,6 @@ int nBase;
 volatile int frecIndex = 0;
 bool pulsePinState;
 bool dirState;
-int nSubida = 6;
-int nBajada = 4;
-int nSubida2 = 15; //30
 const int ndelaypeep = 20;
 
 int peepIndex = 0;
@@ -238,6 +246,7 @@ float pTrigger;
 
 //float compliance;
 float volumen = 0;
+float volumen2 = 0;
 float flujo;
 bool showVolume = LOW;
 
@@ -258,11 +267,15 @@ float pressure = 0.0;
 float pressureRead = 0;
 
 float dPressure;
+float dPressure2;
 int16_t offsetPresion = 0;
 int16_t offsetFlujo = 0;
 
-float umbralDerivada0 = 0.08;
-float umbralAsistido = -0.5;
+// float umbralDerivada0 = 0.08;
+// float umbralAsistido = -0.5;
+
+float umbralDerivada0 = 0.11;
+float umbralAsistido = -1.0;
 
 bool flagAsistido = LOW;
 bool flagPeep = LOW;
@@ -579,7 +592,7 @@ long getNumCiclosValue()
 
 float readPressure()
 {
-    adc0 = ads.readADC_SingleEnded(0);
+    adc0 = ads.readADC_SingleEnded(1);
     return ((71.38 * (adc0 - offsetPresion) / offsetPresion) * 1.1128 * factor_correccion + offSetPEEP); // No correction
 }
 
@@ -828,7 +841,7 @@ void refreshLCDvalues()
 
     case 12:
         lcd.setCursor(11, 3);
-        if ((numCiclos % 2) || !startCycle || volumen < 30)
+        if ((numCiclos % 2) || !startCycle || volumen2 < 30)
         {
             lcd.print('#');
             lcd.print(getNumCiclosValue());
@@ -837,9 +850,8 @@ void refreshLCDvalues()
         else
         {
             lcd.print("Vt ");
-            lcd.print(volumen, 0);
+            lcd.print(volumen2, 0);
             numCiclosOld = getNumCiclosValue();
-            volumen = 0;
         }
         lcdIndex++;
         break;
@@ -963,8 +975,8 @@ void resetAlarmas()
 
 float readFlow()
 {
-    adc2 = ads.readADC_SingleEnded(1);
-    return ((adc2 - offsetFlujo) * 34.58);
+    adc2 = ads.readADC_SingleEnded(0);
+    return ((adc2 - offsetFlujo) * factor_correccion_flujo);
     //return (48.64 * (71.38 * (adc2 - offsetFlujo) / offsetFlujo) * 1.1128); // No scorrection
 }
 
@@ -992,33 +1004,26 @@ void updatePressure()
         }
 
         dPressure = peepPressureVector[ndelaypeep] - peepPressureVector[ndelaypeep - 4];
+        dPressure2 = peepPressureVector[ndelaypeep] - peepPressureVector[ndelaypeep - 8];
 
-        if ((dPressure < umbralDerivada0) && (dPressure > -umbralDerivada0) && !flagAsistido && !flagTos)
+        if ((dPressure2 < umbralDerivada0) && (dPressure2 > -umbralDerivada0) && !flagAsistido && ((millis() - contadorCiclo) >= (exhaleTime * 1000 / 10)))
         {
             flagPeep = HIGH;
             peepPressure = pressureRead;
         }
 
-        if ((dPressure < umbralAsistido) && flagPeep)
+        if (psvMode && (dPressure < umbralAsistido) && flagPeep && ((millis() - contadorCiclo) >= (exhaleTime * 1000 / 10)))
         {
             flagAsistido = HIGH;
+            flagPeep = LOW;
         }
 
-        if ((dPressure > 1.0) && flagPeep)
+        if ((dPressure > 0.01) && flagPeep)
         {
             flagTos = HIGH;
             flagPeep = LOW;
             flagAsistido = LOW;
         }
-        // if (((millis() - contadorCiclo) > 800))
-        // {
-        //     // if (pressureRead > (pressureLastStep - 1.0))
-        //     pressureLastStep = pressureLastStep * 0.96 + 0.04 * pressureRead;
-        // }
-        // else
-        // {
-        //     pressureLastStep = pressureRead;
-        // }
     }
 
     if (peepPressure < 0.0)
@@ -1270,8 +1275,8 @@ void setup() //Las instrucciones solo se ejecutan una vez, despues del arranque
     EEPROM.get(70, encoderValue[6]);
     EEPROM.get(80, numCiclos); // num ciclos
 
-    offsetPresion = ads.readADC_SingleEnded(1);
-    offsetFlujo = ads.readADC_SingleEnded(1);
+    offsetPresion = ads.readADC_SingleEnded(0);
+    offsetFlujo = ads.readADC_SingleEnded(0);
 
     cargarLCD();
     contCursor2 = 2;
@@ -1333,9 +1338,14 @@ void loop()
         Serial.print("\t");
         Serial.print(flagAsistido);
         Serial.print("\t");
-        Serial.print(flagPeep);
+        Serial.print(flujo / 1000.0);
         Serial.print("\t");
-        Serial.println(peepPressure - pressureRead);
+        Serial.println(flagPeep);
+
+        // Serial.print("\t");
+        // Serial.print(volumen);
+        // Serial.print("\t");
+        // Serial.println(volumen2);
 
         // Serial.print(motorPulses);
         // Serial.print(motorPulses);
@@ -1681,7 +1691,6 @@ void loop()
     {
         startCycle = HIGH;
         tFlujo = millis();
-        volumen = 0;
     }
 
     if (startButtonState || startCycle)
@@ -1691,6 +1700,10 @@ void loop()
         dtFlujo = millis() - tFlujo;
         tFlujo = millis();
         volumen += (flujo * dtFlujo / 60000.0);
+        if (volumen > volumen2)
+        {
+            volumen2 = volumen;
+        }
 
         if (((numCiclos % maxnumCiclos) == 0) && (numCiclos != 0))
             alarmaAmbu = HIGH;
@@ -1716,20 +1729,19 @@ void loop()
 
         case 1: // Inhalation Cycle
 
-            if ((pressureRead > (setPressure - 2.0)) && !hysterisis) // 1.5
+            if ((pressureRead > (setPressure - puntoParada1)) && !hysterisis) // 1.5
             {
-                // nBase = 40;
                 motorRun = LOW;
                 hysterisis = HIGH;
             }
 
-            if (hysterisis && (pressureRead < (setPressure * 0.95)))
+            if (hysterisis && (pressureRead < (setPressure * puntoReinicio)))
             {
                 nBase = nSubida2;
                 motorRun = HIGH;
             }
 
-            if (motorRun && (pressureRead > (setPressure - 1.0)))
+            if (motorRun && (pressureRead > (setPressure - puntoParada2)))
                 motorRun = LOW;
 
             if (((millis() - contadorCiclo) >= int(inhaleTime * 1000) + 150) || alarmaPresionAlta)
@@ -1778,6 +1790,7 @@ void loop()
             hysterisis = LOW;
             nBase = nBajada;
             digitalWrite(dirPin, LOW);
+            // peepPressure = 40.0;
             dirState = LOW;
             maxPressureLCD = maxPressure2;
             motorRun = HIGH;
@@ -1804,7 +1817,7 @@ void loop()
                 checkSensor = HIGH;
             }
 
-            if (((millis() - contadorCiclo) >= int(exhaleTime * 1000 - 150)) || ((psvMode && ((millis() - contadorCiclo) >= exhaleTime / 10) && checkSensor && (flagAsistido) && ((peepPressure - pressureRead) > (pTrigger - 1.0)))))
+            if (((millis() - contadorCiclo) >= int(exhaleTime * 1000 - 150)) || ((psvMode && ((millis() - contadorCiclo) >= exhaleTime * 1000 / 10) && checkSensor && (flagAsistido) && ((peepPressure - pressureRead) > (pTrigger - 1.0)))))
             {
                 if ((maxPressure2 - peepPressure) < pressMinLimit)
                     contadorAlarmaPresionBaja++;
