@@ -1,4 +1,4 @@
-// Actualizacion PEEP UdeA 30/10/2020
+// Actualizacion PEEP UdeA 11/11/2020
 
 #include <EEPROM.h>
 #include <Wire.h>
@@ -9,8 +9,8 @@
 /////////////////////////////////////////////
 //// ACA ESTA EL FACTOR DE CALIBRACION //////
 
-float factor_correccion = 1.1619;
-float offSetPEEP = -2.4221;
+float factor_correccion = 1.1316;
+float offSetPEEP = 1.9714;
 float volume = 0.0;
 
 // Correccion Flujo
@@ -21,9 +21,11 @@ float factor_correccion_flujo = 345.8;
 
 int nSubida = 6;
 int nBajada = 4;
+
 int nSubida2 = 15; //30
+
 float puntoReinicio = 0.95;
-float puntoParada1 = 2.0;
+float puntoParada1 = 0.5;
 float puntoParada2 = 1.0;
 
 /////////////////////////////////////////////
@@ -274,8 +276,8 @@ int16_t offsetFlujo = 0;
 // float umbralDerivada0 = 0.08;
 // float umbralAsistido = -0.5;
 
-float umbralDerivada0 = 0.11;
-float umbralAsistido = -1.0;
+float umbralDerivada0 = 0.95;
+float umbralAsistido = -0.4;
 
 bool flagAsistido = LOW;
 bool flagPeep = LOW;
@@ -1699,10 +1701,9 @@ void loop()
         flujo = readFlow();
         dtFlujo = millis() - tFlujo;
         tFlujo = millis();
-        volumen += (flujo * dtFlujo / 60000.0);
-        if (volumen > volumen2)
+        if (flujo > 0)
         {
-            volumen2 = volumen;
+            volumen += (flujo * dtFlujo / 60000.0);
         }
 
         if (((numCiclos % maxnumCiclos) == 0) && (numCiclos != 0))
@@ -1790,6 +1791,7 @@ void loop()
             hysterisis = LOW;
             nBase = nBajada;
             digitalWrite(dirPin, LOW);
+            volumen2 = volumen;
             // peepPressure = 40.0;
             dirState = LOW;
             maxPressureLCD = maxPressure2;
