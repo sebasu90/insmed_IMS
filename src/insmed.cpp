@@ -1,4 +1,4 @@
-// Actualizacion PEEP UdeA 11/11/2020
+// Actualizacion PEEP UdeA 24/11/2020
 
 #include <EEPROM.h>
 #include <Wire.h>
@@ -276,8 +276,8 @@ int16_t offsetFlujo = 0;
 // float umbralDerivada0 = 0.08;
 // float umbralAsistido = -0.5;
 
-float umbralDerivada0 = 0.95;
-float umbralAsistido = -0.4;
+float umbralDerivada0 = 0.6;
+float umbralAsistido = -1;
 
 bool flagAsistido = LOW;
 bool flagPeep = LOW;
@@ -308,6 +308,16 @@ int readPresControlValue()
 float readIeRatioValue()
 {
     return readEncoderValue(3) / 10.0;
+};
+
+float readpsvMode()
+{
+    return readEncoderValue(4);
+};
+
+float readpSens()
+{
+    return readEncoderValue(5) / 10.0;
 };
 
 int readBpmValue()
@@ -342,6 +352,9 @@ btSerial.alarm("alarmaSensor");
 #define BPM_CHAR 'b'
 #define IE_RATIO_CHAR 'i'
 
+#define PSVMODE_CHAR 'm'
+#define PSENS_CHAR 't'
+
 #define debugSerial 0
 
 class BTSerial
@@ -357,6 +370,12 @@ class BTSerial
 
     int _bpm = 0;
     bool _bpmAvailable = LOW;
+
+    int _psvMode = 0;
+    bool __psvModeAvailable = LOW;
+
+    int _pSens = 0;
+    bool _pSensAvailable = LOW;
 
     char readingChar = ' ';
     String inputString = "";
@@ -385,6 +404,22 @@ class BTSerial
             _bpmAvailable = HIGH;
             _bpm = inputString.toInt();
             _bpm = min(max(_bpm, 6), 40);
+            readingChar = ' ';
+            inputString = "";
+            break;
+
+        case PSVMODE_CHAR:
+            __psvModeAvailable = HIGH;
+            _psvMode = inputString.toInt();
+            _psvMode = min(max(_psvMode, 0), 1);
+            readingChar = ' ';
+            inputString = "";
+            break;
+
+        case PSENS_CHAR:
+            _pSensAvailable = HIGH;
+            _pSens = inputString.toInt();
+            _pSens = min(max(_pSens, 5), 99);
             readingChar = ' ';
             inputString = "";
             break;
@@ -447,6 +482,14 @@ public:
                 res += IE_RATIO_CHAR;
                 res += ((int)(readIeRatioValue() * 10.0));
 
+                res += ";s";
+                res += PSVMODE_CHAR;
+                res += ((int)(readpsvMode()));
+
+                res += ";s";
+                res += PSENS_CHAR;
+                res += ((int)(readpSens * 10.0));
+
                 res += ";";
 
                 Serial1.println(res);
@@ -454,7 +497,7 @@ public:
                     Serial.println(res);
             }
 
-            if (inChar == PRES_CONTROL_CHAR || inChar == BPM_CHAR || inChar == IE_RATIO_CHAR)
+            if (inChar == PRES_CONTROL_CHAR || inChar == BPM_CHAR || inChar == IE_RATIO_CHAR || inChar == PSENS_CHAR || inChar == PSVMODE_CHAR)
             {
                 parseIntoVar();
                 readingChar = inChar;
@@ -567,8 +610,8 @@ void updateEncoder()
         if (encoderValue[3] > 4)
             encoderValue[3] = 4;
 
-        if (encoderValue[4] < 80)
-            encoderValue[4] = 80;
+        if (encoderValue[4] < 200)
+            encoderValue[4] = 200;
 
         if (encoderValue[4] > 396)
             encoderValue[4] = 396;
@@ -1309,11 +1352,16 @@ void loop()
         outputString += millis();
         outputString += 'p';
         outputString += pressureRead;
+        outputString += 'f';
+        outputString += flujo / 1000.0;
+
         btParamSendIndex++;
         if (btParamSendIndex >= 10)
         {
             outputString += 'b';
             outputString += readBpmValue();
+            outputString += 'd';
+            outputString += bpmMeasured;
             outputString += 'r';
             outputString += readIeRatioValue();
             outputString += 'i';
@@ -1322,6 +1370,12 @@ void loop()
             outputString += getPEEPValue();
             outputString += 'n';
             outputString += getNumCiclosValue();
+            outputString += 't';
+            outputString += readpSens;
+            outputString += 'm';
+            outputString += readpsvMode();
+            outputString += 'v';
+            outputString += volumen2;
             btParamSendIndex = 0;
         }
         outputString += ';';
@@ -1673,6 +1727,7 @@ void loop()
     psvMode = readEncoderValue(4) % 2;
 
     ieRatio = readIeRatioValue();
+
     bpm = readBpmValue();
 
     inhaleTime = 60.0 / (bpm * (1 + ieRatio));
@@ -1819,7 +1874,7 @@ void loop()
                 checkSensor = HIGH;
             }
 
-            if (((millis() - contadorCiclo) >= int(exhaleTime * 1000 - 150)) || ((psvMode && ((millis() - contadorCiclo) >= exhaleTime * 1000 / 10) && checkSensor && (flagAsistido) && ((peepPressure - pressureRead) > (pTrigger - 1.0)))))
+            if (((millis() - contadorCiclo) >= int(exhaleTime * 1000 - 150)) || ((psvMode && ((millis() - contadorCiclo) >= exhaleTime * 1000 / 10) && checkSensor && (flagAsistido) && ((peepPressure - pressureRead) > (pTrigger - 4.0)))))
             {
                 if ((maxPressure2 - peepPressure) < pressMinLimit)
                     contadorAlarmaPresionBaja++;
