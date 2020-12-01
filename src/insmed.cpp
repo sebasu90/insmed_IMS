@@ -353,7 +353,7 @@ btSerial.alarm("alarmaSensor");
 #define IE_RATIO_CHAR 'i'
 
 #define PSVMODE_CHAR 'm'
-#define PSENS_CHAR 't'
+#define PSENS_CHAR 'j'
 
 #define debugSerial 0
 
@@ -372,7 +372,7 @@ class BTSerial
     bool _bpmAvailable = LOW;
 
     int _psvMode = 0;
-    bool __psvModeAvailable = LOW;
+    bool _psvModeAvailable = LOW;
 
     int _pSens = 0;
     bool _pSensAvailable = LOW;
@@ -409,7 +409,7 @@ class BTSerial
             break;
 
         case PSVMODE_CHAR:
-            __psvModeAvailable = HIGH;
+            _psvModeAvailable = HIGH;
             _psvMode = inputString.toInt();
             _psvMode = min(max(_psvMode, 0), 1);
             readingChar = ' ';
@@ -488,7 +488,7 @@ public:
 
                 res += ";s";
                 res += PSENS_CHAR;
-                res += ((int)(readpSens * 10.0));
+                res += ((int)(readpSens() * 10.0));
 
                 res += ";";
 
@@ -549,6 +549,26 @@ public:
     {
         _ieRatioAvailable = LOW;
         return _ieRatio;
+    }
+
+    bool psvModeAvailable()
+    {
+        return _psvModeAvailable;
+    }
+    int psvMode()
+    {
+        _psvModeAvailable = LOW;
+        return _psvMode;
+    }
+
+    bool pSensAvailable()
+    {
+        return _pSensAvailable;
+    }
+    int pSens()
+    {
+        _pSensAvailable = LOW;
+        return _pSens;
     }
 };
 
@@ -1371,7 +1391,7 @@ void loop()
             outputString += 'n';
             outputString += getNumCiclosValue();
             outputString += 't';
-            outputString += readpSens;
+            outputString += readpSens();
             outputString += 'm';
             outputString += readpsvMode();
             outputString += 'v';
